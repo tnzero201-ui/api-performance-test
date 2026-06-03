@@ -1,92 +1,111 @@
 # 엘리스 LXP QA 프로젝트
 
-## 📌 프로젝트 개요
-엘리스 LXP 서비스의 **학습자/교육자 관점 API 기능 테스트 자동화** 프로젝트입니다.
+엘리스 LXP 서비스의 학습자/교육자 관점 API를 검증하기 위한 QA 자동화 프로젝트입니다.  
+기능 테스트 자동화와 부하 테스트 결과 분석을 함께 구성해 기능 정확성과 성능 지표를 함께 확인할 수 있도록 했습니다.
 
-- **Part 1**: API 기능 테스트 자동화 (pytest)
-- **Part 2**: 부하 테스트 로그 분석 (JMeter)
+## 프로젝트 목표
 
----
+- 학습자/교육자 관점의 주요 API 기능 검증 자동화
+- 정상 응답과 예외 응답을 포함한 테스트 시나리오 구성
+- JMeter 기반 부하 테스트 결과 후처리 및 시각화
+- GitHub Actions 기반 CI 파이프라인 구축으로 반복 실행 가능한 검증 환경 구성
 
-## 📁 프로젝트 구조
+## 프로젝트 구성
 
-```
-qa_project/
-├── conftest.py               # 공통 fixture (토큰, 클라이언트 설정)
-├── .env                      # 환경변수 (토큰, URL 등) - GitLab 업로드 금지
-├── .env.example              # 환경변수 예시
-├── requirements.txt          # 패키지 목록
+### 1. API 기능 테스트 자동화
+- `pytest` 기반 API 테스트 자동화
+- 클래스 홈, 학습 과목, 일정, 게시판, 학습자/교육자 관련 API 검증
+- 정상 케이스와 예외 케이스를 함께 확인해 권한, 파라미터, 응답 코드 검증
+
+### 2. 부하 테스트 로그 분석
+- `JMeter` 실행 결과 데이터를 후처리
+- 평균 응답 시간, 최대/최소 응답 시간, 에러율, 병목 구간 분석
+- 성능 데이터 시각화를 통해 부하 테스트 결과 확인
+
+### 3. CI 파이프라인
+- GitHub Actions 기반 테스트 자동화 파이프라인 구성
+- Python 환경 설정, 문법 검증, pytest 실행, 리포트 업로드 자동화
+- API 테스트 실패 시에도 파이프라인 흐름을 확인할 수 있도록 조정 가능
+
+## 프로젝트 구조
+
+```text
+api-performance-test/
+├── conftest.py
+├── pytest.ini
+├── requirements.txt
+├── README.md
 ├── utils/
-│   ├── __init__.py
-│   └── api_client.py         # API Request Wrapper
-└── tests/
-    ├── __init__.py
-    ├── test_classroom.py     # 클래스 홈 테스트
-    ├── test_course.py        # 학습 과목 테스트
-    ├── test_schedule.py      # 수업 일정 테스트
-    └── test_board.py         # 게시판 테스트
+│   └── api_client.py
+├── tests/
+│   ├── article/
+│   ├── classhome/
+│   ├── classroom_course/
+│   ├── classroom_course_educator/
+│   ├── schedule/
+│   └── student/
+├── load_test/
+│   ├── raw_data/
+│   ├── processed/
+│   └── scripts/
+└── .github/
+    └── workflows/
+        └── ci.yml
 ```
 
----
+## 환경 설정
 
-## ⚙️ 환경 설정
-
-### 1. 패키지 설치
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 환경변수 설정
-```bash
-cp .env.example .env
-
-LEARNER_TOKEN=여기에_학습자_토큰_입력
-EDUCATOR_TOKEN=여기에_교육자_토큰_입력
-CLASSROOM_ID=여기에_클래스_ID_입력
-```
-
-### 3. 토큰 발급 방법
-```
-1. qatrack.elice.io 접속 후 로그인
-2. F12 → Application → Cookies
-3. eliceSessionKey 값 복사 → LEARNER_TOKEN에 입력
-```
-
----
-
-## 🧪 테스트 실행
+`.env` 파일에 필요한 토큰 및 리소스 값을 설정합니다.
 
 ```bash
-# 전체 테스트 실행
+LEARNER_TOKEN=
+EDUCATOR_TOKEN=
+EXPIRED_TOKEN=
+BASE_URL_CLASSROOM=
+BASE_URL_REST=
+CLASSROOM_ID=
+CLASSROOM_ID_V2=
+COURSE_ID=
+COURSE_ID_V2=
+ORIGINAL_COURSE_ID=
+LECTURE_ID=
+```
+
+## 테스트 실행
+
+```bash
 pytest
-
-# 특정 파일만 실행
-pytest tests/test_classroom.py
-
-# 결과 상세 출력
 pytest -v
+pytest tests/classroom_course -v
+pytest tests/schedule -v
 ```
 
----
+## 부하 테스트 리포트 생성
 
-## 🛡️ Safety Design
+```bash
+python load_test/scripts/day6_data_check.py
+python load_test/scripts/preprocess_summary_csv.py
+python load_test/scripts/day7_avg_latency_graph.py
+python load_test/scripts/day7_max_min_graphs.py
+python load_test/scripts/day7_extra_graphs.py
+python load_test/scripts/day7_bottleneck_graphs.py
+python load_test/scripts/tsp_error_rate.py
+```
 
-### 동시성 통제
-- 테스트는 순차 실행 (병렬 실행 옵션 비활성화)
+## 주요 포인트
 
-### 호출 빈도 상한
-- 단위 시간당 요청 수 제한 (운영 서버 부하 방지)
+- 도메인별 테스트 구조 분리
+- 공통 API 호출 로직 분리
+- 환경 변수 기반 실행 구조 구성
+- GitHub Actions 기반 CI 자동화
+- 기능 테스트와 성능 분석 흐름 분리
 
-### 재시도 정책
-- 5xx 응답 시 즉시 재호출 금지
+## 주의사항
 
-### 실행 시점
-- 운영 트래픽 피크 시간대 외 실행 권장
-
----
-
-## ⚠️ 주의사항
-
-- `.env` 파일은 절대 GitLab에 올리지 마세요
-- Production 환경에 부하 테스트 직접 실행 금지
-- 테스트 중 500 에러 발생 시 즉시 중단
+- `.env` 파일은 저장소에 포함하지 않음
+- 운영 환경 대상 부하 테스트는 신중하게 수행
+- 토큰, 리소스 ID, 권한 설정에 따라 테스트 결과가 달라질 수 있음
